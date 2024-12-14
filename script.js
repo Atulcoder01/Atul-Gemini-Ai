@@ -1,4 +1,5 @@
-const typingForm = document.querySelector(".typing-form");const chatContainer = document.querySelector(".chat-list");
+const typingForm = document.querySelector(".typing-form");
+const chatContainer = document.querySelector(".chat-list");
 const suggestions = document.querySelectorAll(".suggestion");
 const toggleThemeButton = document.querySelector("#theme-toggle-button");
 const deleteChatButton = document.querySelector("#delete-chat-button");
@@ -8,8 +9,7 @@ let userMessage = null;
 let isResponseGenerating = false;
 
 // API configuration
-const API_KEY = "AIzaSyAz7Cc22lLRcLSR2XSF7lMot_91WxlXfYw"; // Your API key here
-const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
+const API_URL = "https://BJ-Devs.serv00.net/gemini.php"; // Gemini Chat API URL
 
 // Load theme and chat data from local storage on page load
 const loadDataFromLocalstorage = () => {
@@ -25,7 +25,7 @@ const loadDataFromLocalstorage = () => {
   document.body.classList.toggle("hide-header", savedChats);
 
   chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to the bottom
-}
+};
 
 // Create a new message element and return it
 const createMessageElement = (content, ...classes) => {
@@ -33,7 +33,7 @@ const createMessageElement = (content, ...classes) => {
   div.classList.add("message", ...classes);
   div.innerHTML = content;
   return div;
-}
+};
 
 // Show typing effect by displaying words one by one
 const showTypingEffect = (text, textElement, incomingMessageDiv) => {
@@ -54,39 +54,33 @@ const showTypingEffect = (text, textElement, incomingMessageDiv) => {
     }
     chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to the bottom
   }, 75);
-}
+};
 
 // Fetch response from the API based on user message
 const generateAPIResponse = async (incomingMessageDiv) => {
-  const textElement = incomingMessageDiv.querySelector(".text"); // Getting text element
+  const textElement = incomingMessageDiv.querySelector(".text"); // Get the text element
 
   try {
-    // Send a POST request to the API with the user's message
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        contents: [{ 
-          role: "user", 
-          parts: [{ text: userMessage }] 
-        }] 
-      }),
+    // Send a GET request to the Gemini Chat API with the user's message
+    const response = await fetch(`${API_URL}?text=${encodeURIComponent(userMessage)}`, {
+      method: "GET",
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error.message);
+    const data = await response.json(); // Parse the response JSON
+    if (!response.ok) throw new Error(data.error || "Failed to fetch response from API");
 
-    // Get the API response text and remove asterisks from it
-    const apiResponse = data?.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, '$1');
-    showTypingEffect(apiResponse, textElement, incomingMessageDiv); // Show typing effect
-  } catch (error) { // Handle error
+    // Extract the response text from the API response
+    const apiResponse = data?.text || "No response received from Gemini API."; 
+    showTypingEffect(apiResponse.trim(), textElement, incomingMessageDiv); // Show typing effect
+  } catch (error) {
+    // Handle errors gracefully
     isResponseGenerating = false;
-    textElement.innerText = error.message;
+    textElement.innerText = error.message || "An error occurred.";
     textElement.parentElement.closest(".message").classList.add("error");
   } finally {
     incomingMessageDiv.classList.remove("loading");
   }
-}
+};
 
 // Show a loading animation while waiting for the API response
 const showLoadingAnimation = () => {
@@ -106,7 +100,7 @@ const showLoadingAnimation = () => {
 
   chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to the bottom
   generateAPIResponse(incomingMessageDiv);
-}
+};
 
 // Copy message text to the clipboard
 const copyMessage = (copyButton) => {
@@ -115,12 +109,12 @@ const copyMessage = (copyButton) => {
   navigator.clipboard.writeText(messageText);
   copyButton.innerText = "done"; // Show confirmation icon
   setTimeout(() => copyButton.innerText = "content_copy", 1000); // Revert icon after 1 second
-}
+};
 
 // Handle sending outgoing chat messages
 const handleOutgoingChat = () => {
   userMessage = typingForm.querySelector(".typing-input").value.trim() || userMessage;
-  if(!userMessage || isResponseGenerating) return; // Exit if there is no message or response is generating
+  if (!userMessage || isResponseGenerating) return; // Exit if there is no message or response is generating
 
   isResponseGenerating = true;
 
@@ -132,12 +126,12 @@ const handleOutgoingChat = () => {
   const outgoingMessageDiv = createMessageElement(html, "outgoing");
   outgoingMessageDiv.querySelector(".text").innerText = userMessage;
   chatContainer.appendChild(outgoingMessageDiv);
-  
+
   typingForm.reset(); // Clear input field
   document.body.classList.add("hide-header");
   chatContainer.scrollTo(0, chatContainer.scrollHeight); // Scroll to the bottom
   setTimeout(showLoadingAnimation, 500); // Show loading animation after a delay
-}
+};
 
 // Toggle between light and dark themes
 toggleThemeButton.addEventListener("click", () => {
